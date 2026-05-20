@@ -190,7 +190,7 @@ public class Ec2Service {
         // Resolve subnet
         Subnet subnet = null;
         if (subnetId != null && !subnetId.isEmpty()) {
-            subnet = getRequiredSubent(region, subnetId)
+            subnet = getRequiredSubent(region, subnetId);
         } else {
             // Pick first default subnet
             subnet = subnets.values().stream()
@@ -286,9 +286,8 @@ public class Ec2Service {
     
     private Subent getRequiredSubent(String region, String subnetId) {
         Subnet subnet = subnets.get(key(region, subnetId));
-        if (subnet == null) {
+        if (subnet == null) 
             throw new AwsException("InvalidSubnetID.NotFound", "The subnet ID '" + subnetId + "' does not exist", 400);
-        }
 
         return subnet;
     }
@@ -480,10 +479,9 @@ public class Ec2Service {
 
     private Instance getRequiredInstance(String region, String instanceId) {
         Instance inst = instances.get(key(region, instanceId));
-        if (inst == null) {
+        if (inst == null) 
             throw new AwsException("InvalidInstanceID.NotFound", "The instance ID '" + instanceId + "' does not exist", 400);
-        }
-
+        
         return inst;
     }
 
@@ -521,14 +519,14 @@ public class Ec2Service {
 
     public void deleteVpc(String region, String vpcId) {
         ensureDefaultResources(region);
-        Vpc vpc = Vpc vpc = getRequiredVpc(region, vpcId);
+        Vpc vpc = getRequiredVpc(region, vpcId);
 
         vpcs.remove(key(region, vpcId));
     }
 
     public void modifyVpcAttribute(String region, String vpcId, String attribute, String value) {
         ensureDefaultResources(region);
-        Vpc vpc = Vpc vpc = getRequiredVpc(region, vpcId);
+        Vpc vpc = getRequiredVpc(region, vpcId);
 
         switch (attribute) {
             case "enableDnsSupport"                    -> vpc.setEnableDnsSupport(Boolean.parseBoolean(value));
@@ -540,7 +538,7 @@ public class Ec2Service {
 
     public Vpc describeVpcAttribute(String region, String vpcId, String attribute) {
         ensureDefaultResources(region);
-        Vpc vpc = Vpc vpc = getRequiredVpc(region, vpcId);
+        Vpc vpc = getRequiredVpc(region, vpcId);
 
         return vpc;
     }
@@ -556,7 +554,7 @@ public class Ec2Service {
 
     public VpcCidrBlockAssociation associateVpcCidrBlock(String region, String vpcId, String cidrBlock) {
         ensureDefaultResources(region);
-        Vpc vpc = Vpc vpc = getRequiredVpc(region, vpcId);
+        Vpc vpc = getRequiredVpc(region, vpcId);
 
         VpcCidrBlockAssociation assoc = new VpcCidrBlockAssociation(
                 "vpc-cidr-assoc-" + randomHex(8), cidrBlock);
@@ -577,7 +575,7 @@ public class Ec2Service {
 
     public Subnet createSubnet(String region, String vpcId, String cidrBlock, String availabilityZone) {
         ensureDefaultResources(region);
-        Vpc vpc = Vpc vpc = getRequiredVpc(region, vpcId);
+        Vpc vpc = getRequiredVpc(region, vpcId);
 
         String subnetId = "subnet-" + randomHex(8);
         Subnet subnet = new Subnet();
@@ -613,7 +611,7 @@ public class Ec2Service {
 
     public void modifySubnetAttribute(String region, String subnetId, String attribute, String value) {
         ensureDefaultResources(region);
-        Subnet subnet = getRequiredSubent(region, subnetId)
+        Subnet subnet = getRequiredSubent(region, subnetId);
         
         if ("mapPublicIpOnLaunch".equals(attribute)) {
             subnet.setMapPublicIpOnLaunch(Boolean.parseBoolean(value));
@@ -1033,7 +1031,7 @@ public class Ec2Service {
     public void attachInternetGateway(String region, String igwId, String vpcId) {
         ensureDefaultResources(region);
         InternetGateway igw = InternetGateway igw = getRequiredInternetGateway(region, igwId);
-        
+
         igw.getAttachments().add(new InternetGatewayAttachment(vpcId, "available"));
     }
 
@@ -1071,7 +1069,6 @@ public class Ec2Service {
 
     private Vpc getRequiredVpc(String region, String vpcId) {
         Vpc vpc = vpcs.get(key(region, vpcId));
-
         if (vpc == null)
             throw new AwsException("InvalidVpcID.NotFound", "The vpc ID '" + vpcId + "' does not exist", 400);
 
