@@ -190,10 +190,7 @@ public class Ec2Service {
         // Resolve subnet
         Subnet subnet = null;
         if (subnetId != null && !subnetId.isEmpty()) {
-            subnet = subnets.get(key(region, subnetId));
-            if (subnet == null) {
-                throw new AwsException("InvalidSubnetID.NotFound", "The subnet ID '" + subnetId + "' does not exist", 400);
-            }
+            subnet = getRequiredSubent(region, subnetId)
         } else {
             // Pick first default subnet
             subnet = subnets.values().stream()
@@ -289,7 +286,16 @@ public class Ec2Service {
 
         return reservation;
     }
+    
+    private Subent getRequiredSubent(String region, String subnetId) {
+        Subnet subnet = subnets.get(key(region, subnetId));
+        if (subnet == null) {
+            throw new AwsException("InvalidSubnetID.NotFound", "The subnet ID '" + subnetId + "' does not exist", 400);
+        }
 
+        return subnet;
+    }
+    
     private String assignPrivateIp(String region, String subnetId) {
         if (subnetId == null) {
             return "172.31.0." + (10 + new Random().nextInt(200));
@@ -345,9 +351,8 @@ public class Ec2Service {
         List<Map<String, String>> result = new ArrayList<>();
         for (String id : instanceIds) {
             Instance inst = instances.get(key(region, id));
-            if (inst == null) {
-                throw new AwsException("InvalidInstanceID.NotFound", "The instance ID '" + id + "' does not exist", 400);
-            }
+            Instance inst = getRequiredInstance(region, instanceId);
+            
             if (config.services().ec2().mock() && "pending".equals(inst.getState().getName())) {
                 inst.setState(InstanceState.running());
             }
@@ -373,10 +378,8 @@ public class Ec2Service {
         ensureDefaultResources(region);
         List<Map<String, String>> result = new ArrayList<>();
         for (String id : instanceIds) {
-            Instance inst = instances.get(key(region, id));
-            if (inst == null) {
-                throw new AwsException("InvalidInstanceID.NotFound", "The instance ID '" + id + "' does not exist", 400);
-            }
+            Instance inst = Instance inst = getRequiredInstance(region, instanceId);
+            
             if (config.services().ec2().mock() && "pending".equals(inst.getState().getName())) {
                 inst.setState(InstanceState.running());
             }
@@ -401,10 +404,8 @@ public class Ec2Service {
         ensureDefaultResources(region);
         List<Map<String, String>> result = new ArrayList<>();
         for (String id : instanceIds) {
-            Instance inst = instances.get(key(region, id));
-            if (inst == null) {
-                throw new AwsException("InvalidInstanceID.NotFound", "The instance ID '" + id + "' does not exist", 400);
-            }
+           Instance inst = getRequiredInstance(region, instanceId);
+
             if ("terminated".equals(inst.getState().getName())) {
                 throw new AwsException("IncorrectInstanceState",
                         "The instance '" + id + "' is not in a state from which it can be started.", 400);
@@ -429,10 +430,8 @@ public class Ec2Service {
     public void rebootInstances(String region, List<String> instanceIds) {
         ensureDefaultResources(region);
         for (String id : instanceIds) {
-            Instance inst = instances.get(key(region, id));
-            if (inst == null) {
-                throw new AwsException("InvalidInstanceID.NotFound", "The instance ID '" + id + "' does not exist", 400);
-            }
+            Instance inst = getRequiredInstance(region, instanceId);
+            
             if (!config.services().ec2().mock()) {
                 containerManager.reboot(inst);
             }
@@ -467,25 +466,30 @@ public class Ec2Service {
 
     public Instance describeInstanceAttribute(String region, String instanceId, String attribute) {
         ensureDefaultResources(region);
-        Instance inst = instances.get(key(region, instanceId));
-        if (inst == null) {
-            throw new AwsException("InvalidInstanceID.NotFound", "The instance ID '" + instanceId + "' does not exist", 400);
-        }
+        Instance inst = getRequiredInstance(region, instanceId);
+
         return inst;
     }
 
     public void modifyInstanceAttribute(String region, String instanceId, String attribute, String value) {
         ensureDefaultResources(region);
-        Instance inst = instances.get(key(region, instanceId));
-        if (inst == null) {
-            throw new AwsException("InvalidInstanceID.NotFound", "The instance ID '" + instanceId + "' does not exist", 400);
-        }
+        Instance inst = getRequiredInstance(region, instanceId);
+
         // basic attribute modifications
         switch (attribute) {
             case "instanceType" -> inst.setInstanceType(value);
             case "sourceDestCheck" -> inst.setSourceDestCheck(Boolean.parseBoolean(value));
             case "ebsOptimized" -> inst.setEbsOptimized(Boolean.parseBoolean(value));
         }
+    }
+
+    private Instance getRequiredInstance(String region, String instanceId) {
+        Instance inst = instances.get(key(region, instanceId));
+        if (inst == null) {
+            throw new AwsException("InvalidInstanceID.NotFound", "The instance ID '" + instanceId + "' does not exist", 400);
+        }
+
+        return inst;
     }
 
     // ─── VPCs ──────────────────────────────────────────────────────────────────
@@ -533,7 +537,7 @@ public class Ec2Service {
     public void modifyVpcAttribute(String region, String vpcId, String attribute, String value) {
         ensureDefaultResources(region);
         Vpc vpc = Vpc vpc = getRequiredVpc(region, vpcId);
-        
+
         switch (attribute) {
             case "enableDnsSupport"                    -> vpc.setEnableDnsSupport(Boolean.parseBoolean(value));
             case "enableDnsHostnames"                  -> vpc.setEnableDnsHostnames(Boolean.parseBoolean(value));
@@ -617,10 +621,8 @@ public class Ec2Service {
 
     public void modifySubnetAttribute(String region, String subnetId, String attribute, String value) {
         ensureDefaultResources(region);
-        Subnet subnet = subnets.get(key(region, subnetId));
-        if (subnet == null) {
-            throw new AwsException("InvalidSubnetID.NotFound", "The subnet ID '" + subnetId + "' does not exist", 400);
-        }
+        Subnet subnet = getRequiredSubent(region, subnetId)
+        
         if ("mapPublicIpOnLaunch".equals(attribute)) {
             subnet.setMapPublicIpOnLaunch(Boolean.parseBoolean(value));
         }
