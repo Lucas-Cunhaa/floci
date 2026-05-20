@@ -190,7 +190,7 @@ public class Ec2Service {
         // Resolve subnet
         Subnet subnet = null;
         if (subnetId != null && !subnetId.isEmpty()) {
-            subnet = getRequiredSubent(region, subnetId);
+            subnet = getRequiredSubnet(region, subnetId);
         } else {
             // Pick first default subnet
             subnet = subnets.values().stream()
@@ -207,7 +207,7 @@ public class Ec2Service {
         List<GroupIdentifier> sgIdentifiers = new ArrayList<>();
         if (securityGroupIds != null && !securityGroupIds.isEmpty()) {
             for (String sgId : securityGroupIds) {
-                SecurityGroup sg = getRequiredSecurityGroup(region, groupId);
+                SecurityGroup sg = getRequiredSecurityGroup(region, sgId);
                 sgIdentifiers.add(new GroupIdentifier(sg.getGroupId(), sg.getGroupName()));
             }
         } else {
@@ -284,7 +284,7 @@ public class Ec2Service {
         return reservation;
     }
     
-    private Subent getRequiredSubent(String region, String subnetId) {
+    private Subnet getRequiredSubnet(String region, String subnetId) {
         Subnet subnet = subnets.get(key(region, subnetId));
         if (subnet == null) 
             throw new AwsException("InvalidSubnetID.NotFound", "The subnet ID '" + subnetId + "' does not exist", 400);
@@ -344,8 +344,7 @@ public class Ec2Service {
         ensureDefaultResources(region);
         List<Map<String, String>> result = new ArrayList<>();
         for (String id : instanceIds) {
-            Instance inst = instances.get(key(region, id));
-            Instance inst = getRequiredInstance(region, instanceId);
+            Instance inst = getRequiredInstance(region, id);
             
             if (config.services().ec2().mock() && "pending".equals(inst.getState().getName())) {
                 inst.setState(InstanceState.running());
@@ -372,7 +371,7 @@ public class Ec2Service {
         ensureDefaultResources(region);
         List<Map<String, String>> result = new ArrayList<>();
         for (String id : instanceIds) {
-            Instance inst = Instance inst = getRequiredInstance(region, instanceId);
+            Instance inst = getRequiredInstance(region, id);
             
             if (config.services().ec2().mock() && "pending".equals(inst.getState().getName())) {
                 inst.setState(InstanceState.running());
@@ -398,7 +397,7 @@ public class Ec2Service {
         ensureDefaultResources(region);
         List<Map<String, String>> result = new ArrayList<>();
         for (String id : instanceIds) {
-           Instance inst = getRequiredInstance(region, instanceId);
+           Instance inst = getRequiredInstance(region, id);
 
             if ("terminated".equals(inst.getState().getName())) {
                 throw new AwsException("IncorrectInstanceState",
@@ -424,7 +423,7 @@ public class Ec2Service {
     public void rebootInstances(String region, List<String> instanceIds) {
         ensureDefaultResources(region);
         for (String id : instanceIds) {
-            Instance inst = getRequiredInstance(region, instanceId);
+            Instance inst = getRequiredInstance(region, id);
 
             if (!config.services().ec2().mock()) {
                 containerManager.reboot(inst);
@@ -519,7 +518,7 @@ public class Ec2Service {
 
     public void deleteVpc(String region, String vpcId) {
         ensureDefaultResources(region);
-        Vpc vpc = getRequiredVpc(region, vpcId);
+        getRequiredVpc(region, vpcId);
 
         vpcs.remove(key(region, vpcId));
     }
@@ -575,7 +574,7 @@ public class Ec2Service {
 
     public Subnet createSubnet(String region, String vpcId, String cidrBlock, String availabilityZone) {
         ensureDefaultResources(region);
-        Vpc vpc = getRequiredVpc(region, vpcId);
+        getRequiredVpc(region, vpcId);
 
         String subnetId = "subnet-" + randomHex(8);
         Subnet subnet = new Subnet();
@@ -611,7 +610,7 @@ public class Ec2Service {
 
     public void modifySubnetAttribute(String region, String subnetId, String attribute, String value) {
         ensureDefaultResources(region);
-        Subnet subnet = getRequiredSubent(region, subnetId);
+        Subnet subnet = getRequiredSubnet(region, subnetId);
         
         if ("mapPublicIpOnLaunch".equals(attribute)) {
             subnet.setMapPublicIpOnLaunch(Boolean.parseBoolean(value));
@@ -1030,7 +1029,7 @@ public class Ec2Service {
 
     public void attachInternetGateway(String region, String igwId, String vpcId) {
         ensureDefaultResources(region);
-        InternetGateway igw = InternetGateway igw = getRequiredInternetGateway(region, igwId);
+        InternetGateway igw = getRequiredInternetGateway(region, igwId);
 
         igw.getAttachments().add(new InternetGatewayAttachment(vpcId, "available"));
     }
